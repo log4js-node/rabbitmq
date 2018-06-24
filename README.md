@@ -1,10 +1,14 @@
-# Rabbitmq Appender
+# RabbitMQ Appender for Log4JS
 
-Push log events to a [Rabbitmq](https://www.rabbitmq.com/) MQ. You will need to include the [amqplib](https://www.npmjs.com/package/amqplib) package in your application's dependencies to use this appender.
+Push log events to a [Rabbitmq](https://www.rabbitmq.com/) MQ. Require [log4js-node](https://github.com/log4js-node/log4js-node) 2.x or later.
+
+```bash
+npm install @log4js-ndoe/rabbitmq
+```
 
 ## Configuration
 
-* `type` - `rabbitmq`
+* `type` - `@log4js-ndoe/rabbitmq`
 * `host` - `string` (optional, defaults to `127.0.0.1`) - the location of the rabbitmq server
 * `port` - `integer` (optional, defaults to `5672`) - the port the rabbitmq server is listening on
 * `username` - `string` (optional, defaults to `guest`) - username to use when authenticating connection to rabbitmq
@@ -23,7 +27,7 @@ The appender will use the Rabbitmq Routing model command to send the log event m
 log4js.configure({
   appenders: {
     mq: {
-      type: 'rabbitmq',
+      type: '@log4j-node/rabbitmq',
       host: '127.0.0.1',
       port: 5672,
       username: 'guest',
