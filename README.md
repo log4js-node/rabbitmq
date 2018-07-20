@@ -3,7 +3,7 @@
 Push log events to a [Rabbitmq](https://www.rabbitmq.com/) MQ. Require [log4js-node](https://github.com/log4js-node/log4js-node) 2.x or later.
 
 ```bash
-npm install @log4js-ndoe/rabbitmq
+npm install @log4js-node/rabbitmq
 ```
 
 ## Configuration
