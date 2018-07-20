@@ -27,7 +27,7 @@ The appender will use the Rabbitmq Routing model command to send the log event m
 log4js.configure({
   appenders: {
     mq: {
-      type: '@log4j-node/rabbitmq',
+      type: '@log4js-node/rabbitmq',
       host: '127.0.0.1',
       port: 5672,
       username: 'guest',
