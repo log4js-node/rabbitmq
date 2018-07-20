@@ -3,7 +3,7 @@
 Push log events to a [Rabbitmq](https://www.rabbitmq.com/) MQ. Require [log4js-node](https://github.com/log4js-node/log4js-node) 2.x or later.
 
 ```bash
-npm install @log4js-ndoe/rabbitmq
+npm install @log4js-node/rabbitmq
 ```
 
 ## Configuration
@@ -27,7 +27,7 @@ The appender will use the Rabbitmq Routing model command to send the log event m
 log4js.configure({
   appenders: {
     mq: {
-      type: '@log4j-node/rabbitmq',
+      type: '@log4js-node/rabbitmq',
       host: '127.0.0.1',
       port: 5672,
       username: 'guest',
