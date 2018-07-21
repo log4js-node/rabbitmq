@@ -1,58 +1,12 @@
 'use strict';
 
-const assert = require('assert');
 const test = require('tap').test;
 const sandbox = require('@log4js-node/sandboxed-module');
 const appenderModule = require('../../lib');
+const fakeAmqp = require('../fakeAmqpLib');
 
 function setupLogging(options, error) {
-  const fakeRabbitmq = {
-    msgs: [],
-    connect: function (conn) {
-      this.port = conn.port;
-      this.host = conn.hostname;
-      this.username = conn.username;
-      this.password = conn.password;
-      this.routing_key = conn.routing_key;
-      this.exchange = conn.exchange;
-      this.mq_type = conn.mq_type;
-      this.durable = conn.durable;
-      return {
-        then: (cb) => {
-          cb({
-            createChannel: () => ({
-              then: (callback) => {
-                callback({
-                  assertExchange: (exch, type, opts) => ({
-                    then: (cb2) => {
-                      assert.strictEqual(exch, conn.exchange);
-                      assert.strictEqual(type, conn.mq_type);
-                      assert.strictEqual(opts.durable, conn.durable);
-                      cb2();
-                    }
-                  }),
-                  publish: (exch, key, msg) => {
-                    fakeRabbitmq.msgs.push(msg);
-                  },
-                  close: () => {}
-                });
-              }
-            })
-          });
-          return { catch: (cb3) => { if (error) cb3(error); } };
-        },
-        close: () => {
-          fakeRabbitmq.closed = true;
-          return {
-            then: (cb) => {
-              cb();
-            }
-          };
-        }
-      };
-    }
-  };
-
+  const fakeRabbitmq = fakeAmqp(error);
   const fakeConsole = {
     errors: [],
     error: function (msg) {
@@ -89,13 +43,14 @@ test('log4js rabbitmqAppender', (batch) => {
   batch.test('rabbitmq setup', (t) => {
     const result = setupLogging({
       host: '123.123.123.123',
-      port: 5672,
-      username: 'guest',
-      password: 'guest',
-      routing_key: 'logstash',
+      port: 1234,
+      username: 'thing',
+      password: 'secret',
+      routing_key: 'something',
       exchange: 'exchange_logs',
-      mq_type: 'direct',
+      mq_type: 'some type',
       durable: true,
+      vhost: '/pants',
       type: '@log4js-node/rabbitmq',
       layout: {
         type: 'pattern',
@@ -105,16 +60,20 @@ test('log4js rabbitmqAppender', (batch) => {
 
     result.logger('Log event #1');
 
-    t.equal(result.fakeRabbitmq.host, '123.123.123.123');
-    t.equal(result.fakeRabbitmq.port, 5672);
-    t.equal(result.fakeRabbitmq.username, 'guest');
-    t.equal(result.fakeRabbitmq.password, 'guest');
-    t.equal(result.fakeRabbitmq.routing_key, 'logstash');
-    t.equal(result.fakeRabbitmq.exchange, 'exchange_logs');
-    t.equal(result.fakeRabbitmq.mq_type, 'direct');
-    t.equal(result.fakeRabbitmq.durable, true);
-    t.equal(result.fakeRabbitmq.msgs.length, 1, 'should be one message only');
-    t.equal(result.fakeRabbitmq.msgs[0].toString(), 'cheese %m');
+    t.match(result.fakeRabbitmq.state.params, {
+      hostname: '123.123.123.123',
+      port: 1234,
+      username: 'thing',
+      password: 'secret',
+      routing_key: 'something',
+      exchange: 'exchange_logs',
+      mq_type: 'some type',
+      durable: true,
+      vhost: '/pants'
+    });
+
+    t.equal(result.fakeRabbitmq.state.msgs.length, 1, 'should be one message only');
+    t.equal(result.fakeRabbitmq.state.msgs[0].toString(), 'cheese %m');
     t.end();
   });
 
@@ -125,17 +84,20 @@ test('log4js rabbitmqAppender', (batch) => {
 
     setup.logger('just testing');
 
-    t.equal(setup.fakeRabbitmq.host, '127.0.0.1');
-    t.equal(setup.fakeRabbitmq.port, 5672);
-    t.equal(setup.fakeRabbitmq.username, 'guest');
-    t.equal(setup.fakeRabbitmq.password, 'guest');
-    t.equal(setup.fakeRabbitmq.exchange, '');
-    t.equal(setup.fakeRabbitmq.mq_type, '');
-    t.equal(setup.fakeRabbitmq.durable, false);
-    t.equal(setup.fakeRabbitmq.routing_key, 'logstash');
+    t.match(setup.fakeRabbitmq.state.params, {
+      hostname: '127.0.0.1',
+      port: 5672,
+      username: 'guest',
+      password: 'guest',
+      routing_key: 'logstash',
+      exchange: 'log',
+      mq_type: 'direct',
+      durable: false,
+      vhost: '/'
+    });
 
-    t.equal(setup.fakeRabbitmq.msgs.length, 1);
-    t.equal(setup.fakeRabbitmq.msgs[0].toString(), 'just testing');
+    t.equal(setup.fakeRabbitmq.state.msgs.length, 1);
+    t.equal(setup.fakeRabbitmq.state.msgs[0].toString(), 'just testing');
 
     t.end();
   });
@@ -154,7 +116,7 @@ test('log4js rabbitmqAppender', (batch) => {
     setup.logger('just a test');
 
     setup.appender.shutdown(() => {
-      t.ok(setup.fakeRabbitmq.closed);
+      t.ok(setup.fakeRabbitmq.state.closed);
       t.end();
     });
   });

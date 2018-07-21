@@ -6,6 +6,8 @@ Push log events to a [Rabbitmq](https://www.rabbitmq.com/) MQ. Require [log4js-n
 npm install @log4js-node/rabbitmq
 ```
 
+If you want to be sure that all messages have been sent before your programme exits, remember to call `log4js.shutdown(<callback function>)`.
+
 ## Configuration
 
 * `type` - `@log4js-ndoe/rabbitmq`
@@ -15,11 +17,13 @@ npm install @log4js-node/rabbitmq
 * `password` - `string` (optional, defaults to `guest`) - password to use when authenticating connection to rabbitmq
 * `routing_key` - `string` (optional, defaults to `logstash`) - rabbitmq message's routing_key
 * `durable` - `string` (optional, defaults to false) - will that RabbitMQ lose our queue.
-* `exchange` - `string` - rabbitmq send message's exchange
-* `mq_type` - `string` - rabbitmq message's mq_type
+* `exchange` - `string` (optional, defaults to `log`)- rabbitmq send message's exchange
+* `mq_type` - `string` (optional, defaults to `direct`) - rabbitmq message's mq_type
+* `vhost` - `string` (optional, defaults to `/`) - vhost to use
 * `layout` - `object` (optional, defaults to `messagePassThroughLayout`) - the layout to use for log events (see [layouts](layouts.md)).
+* `shutdownTimeout` - `integer` (optional, defaults to `10000`) - maximum time in milliseconds to wait for messages to be sent during log4js shutdown.
 
-The appender will use the Rabbitmq Routing model command to send the log event messages to the channel.
+The appender will use the RabbitMQ Routing model command to send the log event messages to the channel.
 
 ## Example
 
