@@ -5,8 +5,8 @@ const sandbox = require('@log4js-node/sandboxed-module');
 const appenderModule = require('../../lib');
 const fakeAmqp = require('../fakeAmqpLib');
 
-function setupLogging(options, error) {
-  const fakeRabbitmq = fakeAmqp(error);
+function setupLogging(options, error, fakeAmqpOptions) {
+  const fakeRabbitmq = fakeAmqp(error, fakeAmqpOptions || {});
   const fakeConsole = {
     errors: [],
     error: function (msg) {
@@ -72,9 +72,11 @@ test('log4js rabbitmqAppender', (batch) => {
       vhost: '/pants'
     });
 
-    t.equal(result.fakeRabbitmq.state.msgs.length, 1, 'should be one message only');
-    t.equal(result.fakeRabbitmq.state.msgs[0].toString(), 'cheese %m');
-    t.end();
+    result.appender.shutdown(() => {
+      t.equal(result.fakeRabbitmq.state.msgs.length, 1, 'should be one message only');
+      t.equal(result.fakeRabbitmq.state.msgs[0].toString(), 'cheese %m');
+      t.end();
+    });
   });
 
   batch.test('default values', (t) => {
@@ -96,19 +98,21 @@ test('log4js rabbitmqAppender', (batch) => {
       vhost: '/'
     });
 
-    t.equal(setup.fakeRabbitmq.state.msgs.length, 1);
-    t.equal(setup.fakeRabbitmq.state.msgs[0].toString(), 'just testing');
-
-    t.end();
+    setup.appender.shutdown(() => {
+      t.equal(setup.fakeRabbitmq.state.msgs.length, 1);
+      t.equal(setup.fakeRabbitmq.state.msgs[0].toString(), 'just testing');
+      t.end();
+    });
   });
 
-  batch.test('errors from rabbitmq should go to console', (t) => {
+  batch.test('errors from rabbitmq connect should go to console', (t) => {
     const setup = setupLogging({ type: '@log4js-node/rabbitmq' }, new Error('oh no'));
-    setup.logger('just testing');
 
-    t.equal(setup.fakeConsole.errors.length, 1);
-    t.match(setup.fakeConsole.errors[0], /oh no/);
-    t.end();
+    setTimeout(() => {
+      t.equal(setup.fakeConsole.errors.length, 1);
+      t.match(setup.fakeConsole.errors[0], /oh no/);
+      t.end();
+    }, 100);
   });
 
   batch.test('shutdown should close the rabbitmq connection', (t) => {
@@ -117,6 +121,64 @@ test('log4js rabbitmqAppender', (batch) => {
 
     setup.appender.shutdown(() => {
       t.ok(setup.fakeRabbitmq.state.closed);
+      t.end();
+    });
+  });
+
+  batch.test('shutdown should wait up to shutdownTimeout for messages to be sent', (t) => {
+    const setup = setupLogging({ type: '@log4js-node/rabbitmq', shutdownTimeout: 1000 }, null, { doNotConnect: true });
+    setup.logger('test 1');
+
+    const shutdownTime = Date.now();
+    setup.appender.shutdown(() => {
+      const timeWaiting = Date.now() - shutdownTime;
+      t.ok(timeWaiting > 1000);
+      t.ok(timeWaiting < 1100);
+      t.end();
+    });
+  });
+
+  batch.test('shutdown should only wait until promises have been resolved', (t) => {
+    const setup = setupLogging(
+      { type: '@log4js-node/rabbitmq', shutdownTimeout: 1000 },
+      null,
+      { doNotResolveMessages: true }
+    );
+    setup.logger('test 1');
+
+    const shutdownTime = Date.now();
+    setTimeout(() => {
+      setup.fakeRabbitmq.resolveMessages();
+    }, 200);
+    setup.appender.shutdown(() => {
+      const timeWaiting = Date.now() - shutdownTime;
+      t.ok(timeWaiting > 200);
+      t.ok(timeWaiting < 300);
+      t.end();
+    });
+  });
+
+  batch.test('shutdown should callback immediately if connection but no messages', (t) => {
+    const setup = setupLogging({ type: '@log4js-node/rabbitmq', shutdownTimeout: 1000 });
+
+    const shutdownTime = Date.now();
+    setup.appender.shutdown(() => {
+      const timeWaiting = Date.now() - shutdownTime;
+      t.ok(timeWaiting < 100);
+      t.end();
+    });
+  });
+
+  batch.test('shutdown should callback immediately if no connection and no messages', (t) => {
+    const setup = setupLogging(
+      { type: '@log4js-node/rabbitmq', shutdownTimeout: 1000 },
+      new Error('could not connect')
+    );
+
+    const shutdownTime = Date.now();
+    setup.appender.shutdown(() => {
+      const timeWaiting = Date.now() - shutdownTime;
+      t.ok(timeWaiting < 100);
       t.end();
     });
   });
