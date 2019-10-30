@@ -19,7 +19,8 @@ function setupLogging(options, error, fakeAmqpOptions) {
       amqplib: fakeRabbitmq,
     },
     globals: {
-      console: fakeConsole
+      console: fakeConsole,
+      Buffer: Buffer
     }
   }).configure(options, {
     layout: () => () => 'cheese %m',
