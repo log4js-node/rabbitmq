@@ -40,7 +40,7 @@
     "lib": "lib"
   },
   "dependencies": {
-    "amqplib": "^0.5.2",
+    "amqplib": "^0.5.5",
     "debug": "^3.1.0"
   },
   "devDependencies": {
