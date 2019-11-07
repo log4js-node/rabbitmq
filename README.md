@@ -13,6 +13,7 @@ If you want to be sure that all messages have been sent before your programme ex
 * `type` - `@log4js-ndoe/rabbitmq`
 * `host` - `string` (optional, defaults to `127.0.0.1`) - the location of the rabbitmq server
 * `port` - `integer` (optional, defaults to `5672`) - the port the rabbitmq server is listening on
+* `protocol` - `string` (optional, defaults to `amqp`) - the port the rabbitmq protocol option: amqps
 * `username` - `string` (optional, defaults to `guest`) - username to use when authenticating connection to rabbitmq
 * `password` - `string` (optional, defaults to `guest`) - password to use when authenticating connection to rabbitmq
 * `routing_key` - `string` (optional, defaults to `logstash`) - rabbitmq message's routing_key
