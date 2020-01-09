@@ -31,7 +31,7 @@ function setupLogging(options, error, fakeAmqpOptions) {
     logger: msg => appender({ data: [msg] }),
     appender: appender,
     fakeRabbitmq: fakeRabbitmq,
-      fakeConsole: fakeConsole
+    fakeConsole: fakeConsole
   };
 }
 
