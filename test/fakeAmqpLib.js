@@ -55,8 +55,9 @@ module.exports = (connectionError, options) => {
   state.closed = false;
   const fakeRabbitmq = {
     state,
-    connect: function (params) {
-      state.params = params;
+    connect: function (urlparams, socketOptions) {
+      state.url = urlparams;
+      state.params = socketOptions;
       return new Promise((resolve, reject) => {
         if (connectionError) {
           reject(connectionError);
