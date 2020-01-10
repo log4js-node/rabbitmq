@@ -4,6 +4,7 @@ const test = require('tap').test;
 const sandbox = require('@log4js-node/sandboxed-module');
 const appenderModule = require('../../lib');
 const fakeAmqp = require('../fakeAmqpLib');
+const debug = require('debug')('log4js:rabbitmq');
 
 function setupLogging(options, error, fakeAmqpOptions) {
   const fakeRabbitmq = fakeAmqp(error, fakeAmqpOptions || {});
@@ -43,6 +44,7 @@ test('log4js rabbitmqAppender', (batch) => {
 
   batch.test('rabbitmq setup', (t) => {
     const result = setupLogging({
+      protocol: 'amqps',
       host: '123.123.123.123',
       port: 1234,
       username: 'thing',
@@ -61,22 +63,35 @@ test('log4js rabbitmqAppender', (batch) => {
 
     result.logger('Log event #1');
 
+    t.match(result.fakeRabbitmq.state.url, 'amqps://thing:secret@123.123.123.123:1234/pants');
     t.match(result.fakeRabbitmq.state.params, {
+      protocol: 'amqps',
       hostname: '123.123.123.123',
       port: 1234,
       username: 'thing',
       password: 'secret',
+      locale: 'en_US',
+      frameMax: 0,
+      heartbeat: 60,
+      keepAliveDelay: 0,
+      vhost: '/pants',
       routing_key: 'something',
       exchange: 'exchange_logs',
       mq_type: 'some type',
       durable: true,
-      vhost: '/pants'
+      connection_timeout: 1000,
+      layout: {
+        type: 'pattern',
+        pattern: 'cheese %m'
+      }
     });
 
     result.appender.shutdown(() => {
-      t.equal(result.fakeRabbitmq.state.msgs.length, 1, 'should be one message only');
-      t.equal(result.fakeRabbitmq.state.msgs[0].toString(), 'cheese %m');
-      t.end();
+      setTimeout(() => {
+        t.equal(result.fakeRabbitmq.state.msgs.length, 1, 'should be one message only');
+        t.equal(result.fakeRabbitmq.state.msgs[0].toString(), 'cheese %m');
+        t.end();
+      }, 202);
     });
   });
 
@@ -87,22 +102,36 @@ test('log4js rabbitmqAppender', (batch) => {
 
     setup.logger('just testing');
 
+    t.match(setup.fakeRabbitmq.state.url, 'amqp://guest:guest@127.0.0.1:5672/');
     t.match(setup.fakeRabbitmq.state.params, {
+      protocol: 'amqp',
       hostname: '127.0.0.1',
       port: 5672,
       username: 'guest',
       password: 'guest',
+      locale: 'en_US',
+      frameMax: 0,
+      heartbeat: 60,
+      keepAliveDelay: 0,
+      vhost: '/',
       routing_key: 'logstash',
       exchange: 'log',
       mq_type: 'direct',
       durable: false,
-      vhost: '/'
+      connection_timeout: 1000,
+      layout: {
+        type: 'pattern',
+        pattern: 'cheese %m'
+      }
     });
 
     setup.appender.shutdown(() => {
-      t.equal(setup.fakeRabbitmq.state.msgs.length, 1);
-      t.equal(setup.fakeRabbitmq.state.msgs[0].toString(), 'just testing');
-      t.end();
+      setTimeout(() => {
+        debug('test/tap/index-test.js - setup.appender.shutdown((');
+        t.equal(setup.fakeRabbitmq.state.msgs.length, 1);
+        t.equal(setup.fakeRabbitmq.state.msgs[0].toString(), 'just testing');
+        t.end();
+      }, 202);
     });
   });
 
